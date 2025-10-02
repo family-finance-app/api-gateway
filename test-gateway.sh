@@ -2,7 +2,7 @@
 
 # Family Finance API Gateway Test Script
 
-echo "🚀 Family Finance API Gateway Test"
+echo "Family Finance API Gateway Test"
 echo "=================================="
 
 # Colors
