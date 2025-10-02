@@ -1,4 +1,4 @@
-# Integration with Real Services
+# Integration with Services
 
 This guide will help you replace mock services with your actual microservices.
 

@@ -14,7 +14,7 @@ services:
     networks:
       - family-finance-network
     restart: unless-stopped
-    # Убираем depends_on для возможности независимой работы
+    # Remove depends_on for independent operation capability
     # depends_on:
     #   - auth-service
     #   - account-service
