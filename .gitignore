@@ -1,0 +1,57 @@
+# Nginx configuration backup files
+*.bak
+*.backup
+*.orig
+
+# SSL certificates (keep structure, ignore actual certificates)
+ssl/*.crt
+ssl/*.key
+ssl/*.pem
+ssl/*.p12
+ssl/*.pfx
+!ssl/.gitkeep
+
+# Logs
+logs/
+*.log
+access.log
+error.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker override files
+docker-compose.override.yml
+
+# Environment files
+.env
+.env.local
+
+# Cache
+.cache/
+
+# Test files
+*.test
+test-results/
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
