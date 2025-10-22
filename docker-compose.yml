@@ -1,0 +1,16 @@
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: family-finance-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - family-finance-network
+    restart: unless-stopped
+
+networks:
+  family-finance-network:
+    external: true
