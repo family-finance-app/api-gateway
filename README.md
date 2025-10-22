@@ -1,6 +1,6 @@
 # Family Finance API Gateway
 
-NGINX-based API Gateway for the Family Finance application, routing requests between microservices.
+NGINX-based API Gateway for the Family Finance application, routing requests to the backend service.
 
 ## Structure
 
@@ -16,34 +16,44 @@ api-gateway/
 
 ## API Routing
 
-The gateway is configured for the following routes:
+The gateway is configured to route all `/api/*` requests to the family-finance-backend service:
 
 - `GET /health` - gateway health check
-- `GET /` - API Gateway information
-- `/api/auth/*` - authentication service routes
-- `/api/accounts/*` - accounts service routes
-- `/api/transactions/*` - transactions service routes
+- `/api/*` - all API routes proxied to backend service
 
 ## Running
 
-### Local Development
+### Prerequisites
 
-1. Start all services:
+1. Create shared Docker network (run this once):
 
 ```bash
+docker network create family-finance-network
+```
+
+2. Make sure the backend service is running:
+
+```bash
+# In the backend directory
+cd ../backend
 docker-compose up -d
 ```
 
-2. Check status:
+### Start API Gateway
 
 ```bash
-curl http://localhost/health
+# In the api-gateway directory
+docker-compose up -d
 ```
 
-3. Check API Gateway:
+### Check Status
 
 ```bash
-curl http://localhost/
+# Check gateway health
+curl http://localhost/health
+
+# Check proxied API
+curl http://localhost/api/health
 ```
 
 ### Stopping Services
@@ -52,238 +62,106 @@ curl http://localhost/
 docker-compose down
 ```
 
-## Managing Individual Services
+## Development Workflow
 
-The gateway is designed for independent operation of microservices. You can manage each service separately.
+### Starting Both Services
 
-### Using Makefile Commands
-
-```bash
-# Stop individual services
-make stop-auth           # Stop authentication service
-make stop-accounts       # Stop accounts service
-make stop-transactions   # Stop transactions service
-
-# Start individual services
-make start-auth          # Start authentication service
-make start-accounts      # Start accounts service
-make start-transactions  # Start transactions service
-
-# Restart individual services
-make restart-auth        # Restart authentication service
-make restart-accounts    # Restart accounts service
-make restart-transactions # Restart transactions service
-
-# Check status of all services
-make status              # Show status of all services
-```
-
-### Using Docker Compose Commands
+1. **Start Backend:**
 
 ```bash
-# Stop a specific service
-docker-compose stop auth-service
-docker-compose stop account-service
-docker-compose stop transaction-service
-
-# Start a specific service
-docker-compose up -d auth-service
-docker-compose up -d account-service
-docker-compose up -d transaction-service
-
-# Restart a specific service
-docker-compose restart auth-service
-
-# Completely remove a service container
-docker-compose rm -s -f auth-service
+cd backend
+docker-compose up -d
 ```
 
-### What Happens When Services Are Stopped
-
-#### ✅ Continues to work:
-
-- **NGINX Gateway** — always available regardless of service status
-- **Other services** — not affected when one is stopped
-- **Main page** (`GET /`) — always available
-- **Health check** (`GET /health`) — always works
-- **CORS and static resources** — continue to function
-
-#### ❌ Stops working:
-
-- **Only API endpoints of the stopped service** return `502 Bad Gateway`
-
-#### Examples:
-
-**When auth-service is stopped:**
+2. **Start API Gateway:**
 
 ```bash
-make stop-auth
+cd api-gateway
+docker-compose up -d
 ```
 
-- ❌ `/api/auth/*` → 502 Bad Gateway
-- ✅ `/api/accounts/*` → works
-- ✅ `/api/transactions/*` → works
-- ✅ `/health` → works
-
-**When account-service is stopped:**
+3. **Verify Setup:**
 
 ```bash
-make stop-accounts
+# Check gateway
+curl http://localhost/health
+
+# Check backend through gateway
+curl http://localhost/api/health
 ```
 
-- ✅ `/api/auth/*` → works
-- ❌ `/api/accounts/*` → 502 Bad Gateway
-- ✅ `/api/transactions/*` → works
-- ✅ `/health` → works
-
-### Service Status Monitoring
+### Stopping Services
 
 ```bash
-# Quick check of all services
-make status
+# Stop gateway
+cd api-gateway
+docker-compose down
 
-# Detailed container status
-docker-compose ps
-
-# Check specific endpoints
-curl http://localhost/api/auth/health
-curl http://localhost/api/accounts/
-curl http://localhost/api/transactions/
-
-# Check logs of a specific service
-docker-compose logs -f auth-service
-docker-compose logs -f account-service
-docker-compose logs -f transaction-service
+# Stop backend
+cd backend
+docker-compose down
 ```
 
-### Development Patterns
+## Service Communication
 
-**Developing a single service:**
+The API Gateway communicates with the backend service through Docker networking:
 
-```bash
-# Stop all except the needed one
-make stop-accounts
-make stop-transactions
-# Work only with auth-service
-```
-
-**Debugging issues:**
-
-```bash
-# Restart problematic service
-make restart-auth
-
-# View logs
-docker-compose logs -f auth-service
-
-# Check network
-docker network inspect api-gateway_family-finance-network
-```
-
-**Gradual deployment:**
-
-```bash
-# Start services one by one
-make start-auth
-# Check functionality
-make start-accounts
-# Check functionality
-make start-transactions
-```
+- **Gateway:** `family-finance-gateway` (port 80/443)
+- **Backend:** `family-finance-backend` (port 3000)
+- **Network:** `family-finance-network` (external)
 
 ## CORS Configuration
 
-The gateway is set to work with any domain in development mode. For production, it is recommended to:
+The gateway is configured with CORS headers for frontend development:
 
-1. Change `Access-Control-Allow-Origin *` to your frontend domain
-2. Set up SSL certificates
-3. Add additional security headers
+- **Allowed Origin:** `http://localhost:3000` (frontend)
+- **Allowed Methods:** GET, POST, PUT, DELETE, OPTIONS
+- **Allowed Headers:** Authorization, Content-Type, Accept
+
+## Rate Limiting
+
+The following limits are configured:
+
+- **API endpoints:** 10 requests per second
+- **Authentication endpoints:** 5 requests per second
 
 ## Monitoring and Logs
 
 View logs:
 
 ```bash
-# All logs
+# Gateway logs
 docker-compose logs -f
 
-# Only gateway logs
-docker-compose logs -f nginx-gateway
-```
-
-## Rate Limiting
-
-The following limits are set:
-
-- API endpoints: 10 requests per second
-- Authentication endpoints: 5 requests per second
-
-## SSL/HTTPS (for production)
-
-To enable HTTPS:
-
-1. Create the `ssl/` directory and place certificates there
-2. Update configuration to add SSL block
-3. Redirect HTTP to HTTPS
-
-## Replacing Mock Services
-
-Mock services are configured in `docker-compose.yml` for testing. Replace them with your real services:
-
-```yaml
-auth-service:
-  build: ../auth-service
-  # ... your configuration
-```
-
-## Environment Variables
-
-You can create a `.env` file for configuration:
-
-```env
-# Ports
-HTTP_PORT=80
-HTTPS_PORT=443
-
-# Rate limiting
-API_RATE_LIMIT=10r/s
-AUTH_RATE_LIMIT=5r/s
-
-# Upstream servers
-AUTH_SERVICE_URL=auth-service:3001
-ACCOUNT_SERVICE_URL=account-service:3002
-TRANSACTION_SERVICE_URL=transaction-service:3003
+# Backend logs (from backend directory)
+cd ../backend
+docker-compose logs -f
 ```
 
 ## Troubleshooting
 
-### Issues connecting to upstream servers
+### 502 Bad Gateway
 
-1. Check that services are running:
+Usually means the backend service is not available:
+
+1. Check backend service status:
 
 ```bash
+cd ../backend
 docker-compose ps
 ```
 
-2. Check network:
+2. Check network connectivity:
 
 ```bash
-docker network ls
-docker network inspect api-gateway_family-finance-network
+docker network inspect family-finance-network
 ```
 
-3. Check logs of a specific service:
+3. Verify backend health:
 
 ```bash
-docker-compose logs [service-name]
+curl http://localhost:3000/api/health
 ```
-
-### 502 Bad Gateway
-
-Usually means the upstream server is unavailable:
-
-- Check service status
-- Make sure configuration ports match service ports
 
 ### CORS Issues
 
