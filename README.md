@@ -16,10 +16,10 @@ api-gateway/
 
 ## API Routing
 
-The gateway is configured to route all `/api/*` requests to the family-finance-backend service:
+The gateway is configured to route all `/*` requests to the family-finance-backend service:
 
 - `GET /health` - gateway health check
-- `/api/*` - all API routes proxied to backend service
+- `/*` - all API routes proxied to backend service
 
 ## Running
 
@@ -114,9 +114,9 @@ The API Gateway communicates with the backend service through Docker networking:
 
 The gateway is configured with CORS headers for frontend development:
 
-- **Allowed Origin:** `http://localhost:3000` (frontend)
+- **Allowed Origin:** `http://localhost:3500` (frontend)
 - **Allowed Methods:** GET, POST, PUT, DELETE, OPTIONS
-- **Allowed Headers:** Authorization, Content-Type, Accept
+- **Allowed Headers:** Authorization, Content-Type, Accept, Cache-Control
 
 ## Rate Limiting
 
@@ -168,5 +168,5 @@ curl http://localhost:3000/api/health
 Check response headers:
 
 ```bash
-curl -I -X OPTIONS http://localhost/api/auth/
+curl -I -X OPTIONS http://localhost/auth/
 ```
